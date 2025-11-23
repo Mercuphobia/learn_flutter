@@ -20,7 +20,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
       // Nếu ĐÚNG: Quay về trang Login và xóa hết các trang cũ
       Navigator.pushNamedAndRemoveUntil(
         context,
-        '/login', // Đi đến màn hình Đăng nhập
+        '/home', // Đi đến màn hình Đăng nhập
             (route) => false, // Xóa tất cả các route trước đó khỏi stack
       );
     } else {
