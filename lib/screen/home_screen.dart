@@ -4,6 +4,9 @@ import '../../models/task_model.dart';
 import '../../services/task_service.dart';
 import '../screen/calendar/calendar_screen.dart';
 import '../screen/profile/profile_screen.dart';
+import '../screen/UIDesign/ui_design.dart';
+import '../screen/UIDesign/daily_detail_screen.dart';
+import '../screen/notifycation/notifycation_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -68,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- CÁC WIDGET CŨ CỦA BẠN ĐƯỢC GOM VÀO ĐÂY ---
   Widget _buildHomeContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -101,7 +103,15 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(dateStr, style: TextStyle(color: Colors.grey[600])),
-            const Icon(Icons.notifications, color: Colors.blue),
+            IconButton(
+              icon: const Icon(Icons.notifications, color: Colors.blue),
+              onPressed: (){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                );
+              },
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -136,7 +146,13 @@ class _HomeScreenState extends State<HomeScreen> {
               final task = _priorityTasks[index];
               final colors = [Colors.blue, Colors.deepPurple, Colors.red];
               final color = colors[index % colors.length];
-              return _buildPriorityCard(task, color);
+              final icons = [
+                Icons.mobile_screen_share,
+                Icons.design_services,
+                Icons.code,
+              ];
+              final icon = icons[index % icons.length];
+              return _buildPriorityCard(task, color, icon);
             },
           ),
         ),
@@ -144,59 +160,69 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPriorityCard(Task task, Color color) {
+  Widget _buildPriorityCard(Task task, Color color, IconData icon) {
     final daysLeft = task.endTime.difference(DateTime.now()).inDays;
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 15),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                "$daysLeft days",
-                style: const TextStyle(color: Colors.white, fontSize: 10),
+    return GestureDetector(
+      onTap: (){
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => UiDesign(task: task)),
+        ).then((_){
+          _loadData();
+        });
+      },
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 15),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  "$daysLeft days",
+                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                ),
               ),
             ),
-          ),
-          const Spacer(),
-          const Icon(Icons.design_services, color: Colors.white, size: 30),
-          const SizedBox(height: 10),
-          Text(
-            task.title,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Progress", style: TextStyle(color: Colors.white70, fontSize: 10)),
-              Text("${task.progress}%", style: const TextStyle(color: Colors.white, fontSize: 10)),
-            ],
-          ),
-          const SizedBox(height: 5),
-          LinearProgressIndicator(
-            value: task.progress / 100,
-            backgroundColor: Colors.white.withOpacity(0.3),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-            minHeight: 4,
-          )
-        ],
+            const Spacer(),
+            Icon(icon, color: Colors.white, size: 30),
+            const SizedBox(height: 10),
+            Text(
+              task.title,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Progress", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                Text("${task.progress}%", style: const TextStyle(color: Colors.white, fontSize: 10)),
+              ],
+            ),
+            const SizedBox(height: 5),
+            LinearProgressIndicator(
+              value: task.progress / 100,
+              backgroundColor: Colors.white.withOpacity(0.3),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 4,
+            )
+          ],
+        ),
       ),
     );
   }
@@ -223,41 +249,49 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDailyTaskItem(Task task) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              task.title,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          InkWell(
-            onTap: () async {
-              final updated = task.copyWith(isCompleted: !task.isCompleted);
-              await _taskService.updateTask(updated);
-              _loadData();
-            },
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.blue, width: 2),
-                color: task.isCompleted ? Colors.blue : Colors.transparent,
+    return GestureDetector(
+      onTap: (){
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => DailyDetailScreen(task: task)),
+        ).then((_) => _loadData());
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                task.title,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-              child: task.isCompleted
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
-                  : null,
             ),
-          )
-        ],
+            InkWell(
+              onTap: () async {
+                final updated = task.copyWith(isCompleted: !task.isCompleted);
+                await _taskService.updateTask(updated);
+                _loadData();
+              },
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.blue, width: 2),
+                  color: task.isCompleted ? Colors.blue : Colors.transparent,
+                ),
+                child: task.isCompleted
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
