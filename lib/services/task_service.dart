@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/task_model.dart';
+import '../models/task/task_model.dart';
 
 class TaskService {
   static const String _tasksKey = 'tasks_data';
@@ -65,7 +65,9 @@ class TaskService {
       Task(
         id: '1',
         title: 'UI Design',
-        description: 'Design mobile app interface for client',
+        description: 'Design mobile app interface for client, This includes everything from screens ans touchscreens, keyboard, sounds'
+            'and event, light. To understand the evolution of UI, however, it helpful to learn a bit more about its history and how it has'
+            'evolved into best practices and a profession',
         startTime: now,
         endTime: now.add(const Duration(days: 12, hours: 18)),
         isPriority: true,
@@ -83,7 +85,8 @@ class TaskService {
       Task(
         id: '2',
         title: 'Laravel Task',
-        description: 'Fix bugs in backend API',
+        description: 'Fix bugs in backend API. To understand the evolution of UI, however, it helpful to learn a bit more about its history and how it has'
+            'evolved into best practices and a profession',
         startTime: now,
         endTime: now.add(const Duration(days: 20)),
         isPriority: true,
@@ -99,7 +102,8 @@ class TaskService {
       Task(
         id: '3',
         title: 'Edit Picture',
-        description: 'Edit photos for marketing campaign',
+        description: 'Edit photos for marketing campaign. To understand the evolution of UI, however, it helpful to learn a bit more about its history and how it has'
+            'evolved into best practices and a profession',
         startTime: now,
         endTime: now.add(const Duration(days: 5)),
         isPriority: true,

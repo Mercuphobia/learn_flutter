@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../models/task_model.dart';
+import '../models/task/task_model.dart';
 import '../../services/task_service.dart';
 import '../screen/calendar/calendar_screen.dart';
 import '../screen/profile/profile_screen.dart';
 import '../screen/UIDesign/ui_design.dart';
 import '../screen/UIDesign/daily_detail_screen.dart';
-import '../screen/notifycation/notifycation_screen.dart';
+import '../screen/notification/notification_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
