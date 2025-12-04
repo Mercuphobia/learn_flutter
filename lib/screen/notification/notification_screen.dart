@@ -84,13 +84,19 @@ class NotificationScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: item.isRead ? Colors.grey.withOpacity(0.7) : Colors.white,
+        // LOGIC MÀU SẮC:
+        // item.isRead == true  -> Màu xám nhạt (Colors.grey[100])
+        // item.isRead == false -> Màu trắng (Colors.white)
+        color: item.isRead ? Colors.grey[200] : Colors.white,
+        borderRadius: BorderRadius.circular(15),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
+          // Chỉ hiện bóng đổ nếu chưa đọc (tạo cảm giác nổi lên)
+          if (!item.isRead)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
         ],
       ),
       child: Row(
