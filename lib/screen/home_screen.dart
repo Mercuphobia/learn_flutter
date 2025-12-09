@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../models/task/task_model.dart';
-import '../../services/task_service.dart';
+
+import '../../models/task/task_model.dart';
+import '../screen/task/bloc/task_bloc.dart';
+import '../screen/task/bloc/task_state.dart';
+
 import '../screen/calendar/calendar_screen.dart';
 import '../screen/profile/profile_screen.dart';
 import '../screen/UIDesign/ui_design.dart';
 import '../screen/UIDesign/daily_detail_screen.dart';
 import '../screen/notification/notification_screen.dart';
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,32 +20,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TaskService _taskService = TaskService();
-
-  // 1. Thêm biến để theo dõi Tab hiện tại
+  // Biến UI State (Giữ nguyên vì nó chỉ quản lý tab, không liên quan data)
   int _selectedIndex = 0;
 
-  List<Task> _priorityTasks = [];
-  List<Task> _dailyTasks = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    await _taskService.initFakeData();
-    final tasks = await _taskService.getTasks();
-    setState(() {
-      _priorityTasks = tasks.where((t) => t.isPriority).toList();
-      _dailyTasks = tasks.where((t) => !t.isPriority).toList();
-      _isLoading = false;
-    });
-  }
-
-  // 2. Hàm xử lý khi bấm vào BottomBar
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -51,46 +31,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Danh sách các màn hình tương ứng với từng tab
+    // Lưu ý: Đảm bảo bạn đã bọc HomeScreen bằng BlocProvider<TaskCubit> ở main.dart
+    // hoặc bọc ngay tại đây nếu muốn.
+
     final List<Widget> pages = [
-      _buildHomeContent(),
+      _buildHomeContent(), // Phần này sẽ dùng BlocBuilder
       const CalendarScreen(),
       const ProfileScreen(),
     ];
 
     return Scaffold(
       backgroundColor: _selectedIndex == 0 ? const Color(0xFFFFF0F0) : Colors.white,
-
-      // 3. Dùng IndexedStack để giữ trạng thái trang Home khi chuyển tab
       body: IndexedStack(
         index: _selectedIndex,
         children: pages,
       ),
-
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
+  // --- PHẦN QUAN TRỌNG: SỬ DỤNG BLOC BUILDER ---
   Widget _buildHomeContent() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 30),
-              _buildPrioritySection(),
-              const SizedBox(height: 30),
-              _buildDailyTaskSection(),
-            ],
-          ),
-        ),
-      ),
+    return BlocBuilder<TaskCubit, TaskState>(
+      builder: (context, state) {
+        // Dùng .when để xử lý các trạng thái từ Cubit
+        return state.when(
+          initial: () => const SizedBox(),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (msg) => Center(child: Text(msg)),
+
+          // KHI CÓ DỮ LIỆU
+          loaded: (allTasks) {
+            // Lọc dữ liệu ngay tại đây
+            final priorityTasks = allTasks.where((t) => t.isPriority).toList();
+            final dailyTasks = allTasks.where((t) => !t.isPriority).toList();
+
+            return SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 30),
+                      _buildPrioritySection(priorityTasks), // Truyền list vào
+                      const SizedBox(height: 30),
+                      _buildDailyTaskSection(dailyTasks),   // Truyền list vào
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -105,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(dateStr, style: TextStyle(color: Colors.grey[600])),
             IconButton(
               icon: const Icon(Icons.notifications, color: Colors.blue),
-              onPressed: (){
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const NotificationScreen()),
@@ -128,7 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPrioritySection() {
+  // Nhận list từ BlocBuilder truyền vào
+  Widget _buildPrioritySection(List<Task> tasks) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -141,9 +137,9 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 200,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: _priorityTasks.length,
+            itemCount: tasks.length,
             itemBuilder: (context, index) {
-              final task = _priorityTasks[index];
+              final task = tasks[index];
               final colors = [Colors.blue, Colors.deepPurple, Colors.red];
               final color = colors[index % colors.length];
               final icons = [
@@ -163,13 +159,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPriorityCard(Task task, Color color, IconData icon) {
     final daysLeft = task.endTime.difference(DateTime.now()).inDays;
     return GestureDetector(
-      onTap: (){
+      onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => UiDesign(task: task)),
-        ).then((_){
-          _loadData();
-        });
+        );
+        // KHÔNG CẦN gọi .then(loadData) nữa vì Cubit tự động cập nhật UI
+        // nếu màn hình UiDesign có gọi hàm của Cubit.
       },
       child: Container(
         width: 160,
@@ -211,6 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Progress", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                // Sử dụng getter progress trong model
                 Text("${task.progress}%", style: const TextStyle(color: Colors.white, fontSize: 10)),
               ],
             ),
@@ -227,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDailyTaskSection() {
+  Widget _buildDailyTaskSection(List<Task> tasks) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -239,9 +236,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: _dailyTasks.length,
+          itemCount: tasks.length,
           itemBuilder: (context, index) {
-            return _buildDailyTaskItem(_dailyTasks[index]);
+            return _buildDailyTaskItem(tasks[index]);
           },
         ),
       ],
@@ -250,11 +247,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDailyTaskItem(Task task) {
     return GestureDetector(
-      onTap: (){
+      onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => DailyDetailScreen(task: task)),
-        ).then((_) => _loadData());
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -268,14 +265,24 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Text(
                 task.title,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style:  TextStyle(
+                  fontWeight: FontWeight.w500,
+                  decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                ),
               ),
             ),
             InkWell(
-              onTap: () async {
+              onTap: () {
+                // GỌI CUBIT ĐỂ CẬP NHẬT TRẠNG THÁI
+                // (Giả sử bạn đã thêm hàm toggleTaskCompletion vào Cubit,
+                // nếu chưa thì bạn dùng hàm addTask/updateTask trong Cubit)
+
+                // Ví dụ cách gọi (cần thêm hàm toggleTask trong Cubit trước):
+                // context.read<TaskCubit>().toggleTaskCompletion(task.id);
+
+                // HOẶC gọi hàm updateTask nếu Cubit có:
                 final updated = task.copyWith(isCompleted: !task.isCompleted);
-                await _taskService.updateTask(updated);
-                _loadData();
+                context.read<TaskCubit>().addTask(updated); // Hoặc hàm updateTask tương ứng
               },
               child: Container(
                 width: 24,
@@ -296,18 +303,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 4. Cập nhật BottomNavigationBar để nhận sự kiện click
   Widget _buildBottomNav() {
     return BottomNavigationBar(
-      currentIndex: _selectedIndex, // Xác định tab đang active
-      onTap: _onItemTapped,         // Hàm xử lý khi click
-
+      currentIndex: _selectedIndex,
+      onTap: _onItemTapped,
       showSelectedLabels: false,
       showUnselectedLabels: false,
       elevation: 0,
       backgroundColor: _selectedIndex == 0 ? const Color(0xFFFFF0F0) : Colors.white,
-      selectedItemColor: Colors.blue, // Màu icon khi được chọn
-      unselectedItemColor: Colors.grey, // Màu icon khi không được chọn
+      selectedItemColor: Colors.blue,
+      unselectedItemColor: Colors.grey,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
         BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: "Calendar"),

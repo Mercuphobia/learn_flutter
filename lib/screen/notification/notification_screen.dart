@@ -8,8 +8,6 @@ import './bloc/notification_bloc.dart';
 import './bloc/notification_state.dart';
 
 
-// ... các import bên trên giữ nguyên
-
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
@@ -18,7 +16,6 @@ class NotificationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF0F0),
       appBar: AppBar(
-        // ... code AppBar giữ nguyên
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -36,7 +33,9 @@ class NotificationScreen extends StatelessWidget {
       body: BlocProvider(
         create: (context) {
           final service = NotificationService();
-          return NotificationCubit(service)..getNotificationData();
+          final cubit = NotificationCubit(service);
+          cubit.getNotificationData();
+          return cubit;
         },
         child: BlocBuilder<NotificationCubit, NotificationState>(
           builder: (context, state) {
@@ -84,13 +83,9 @@ class NotificationScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        // LOGIC MÀU SẮC:
-        // item.isRead == true  -> Màu xám nhạt (Colors.grey[100])
-        // item.isRead == false -> Màu trắng (Colors.white)
         color: item.isRead ? Colors.grey[200] : Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
-          // Chỉ hiện bóng đổ nếu chưa đọc (tạo cảm giác nổi lên)
           if (!item.isRead)
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -106,7 +101,6 @@ class NotificationScreen extends StatelessWidget {
 
           const SizedBox(width: 15),
 
-          // 2. Nội dung text bên phải
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +111,6 @@ class NotificationScreen extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    // Nếu chưa đọc thì màu đen đậm, đã đọc thì nhạt hơn chút
                     color: item.isRead ? Colors.black87 : Colors.black,
                   ),
                 ),

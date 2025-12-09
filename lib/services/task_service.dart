@@ -21,36 +21,36 @@ class TaskService {
   }
 
   // 2. Lưu danh sách task (Hàm nội bộ)
-  Future<void> _saveToPrefs(List<Task> tasks) async {
+  Future<void> saveToPrefs(List<Task> tasks) async {
     final prefs = await SharedPreferences.getInstance();
     final String taskJson = jsonEncode(tasks.map((e) => e.toJson()).toList());
     await prefs.setString(_tasksKey, taskJson);
   }
 
   // 3. Thêm Task mới
-  Future<void> addTask(Task newTask) async {
-    final tasks = await getTasks();
-    final newTasks = [newTask, ...tasks];
-    await _saveToPrefs(newTasks);
-  }
+  // Future<void> addTask(Task newTask) async {
+  //   final tasks = await getTasks();
+  //   final newTasks = [newTask, ...tasks];
+  //   await _saveToPrefs(newTasks);
+  // }
 
   // 4. Cập nhật Task
-  Future<void> updateTask(Task updatedTask) async {
-    final tasks = await getTasks();
-    final index = tasks.indexWhere((t) => t.id == updatedTask.id);
-
-    if (index != -1) {
-      tasks[index] = updatedTask;
-      await _saveToPrefs(tasks);
-    }
-  }
+  // Future<void> updateTask(Task updatedTask) async {
+  //   final tasks = await getTasks();
+  //   final index = tasks.indexWhere((t) => t.id == updatedTask.id);
+  //
+  //   if (index != -1) {
+  //     tasks[index] = updatedTask;
+  //     await _saveToPrefs(tasks);
+  //   }
+  // }
 
   // 5. Xóa Task
-  Future<void> deleteTask(String id) async {
-    final tasks = await getTasks();
-    tasks.removeWhere((t) => t.id == id);
-    await _saveToPrefs(tasks);
-  }
+  // Future<void> deleteTask(String id) async {
+  //   final tasks = await getTasks();
+  //   tasks.removeWhere((t) => t.id == id);
+  //   await _saveToPrefs(tasks);
+  // }
 
   // 6. Hàm tạo dữ liệu giả (Đã cập nhật theo cấu trúc SubTask)
   Future<void> initFakeData() async {
@@ -156,7 +156,7 @@ class TaskService {
       ),
     ];
 
-    await _saveToPrefs(fakeTasks);
+    await saveToPrefs(fakeTasks);
     print("Đã tạo dữ liệu mẫu với SubTasks thành công!");
   }
 }

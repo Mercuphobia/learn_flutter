@@ -7,7 +7,6 @@ class NotificationService {
   Future<List<NotificationModel>> getNotifications() async {
     await Future.delayed(const Duration(milliseconds: 1000));
 
-    // Lấy danh sách các Tiêu đề (hoặc ID) đã đọc từ bộ nhớ máy
     final prefs = await SharedPreferences.getInstance();
     final List<String> readTitles = prefs.getStringList(_storageKey) ?? [];
 

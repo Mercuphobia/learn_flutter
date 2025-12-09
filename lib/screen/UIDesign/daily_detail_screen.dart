@@ -1,38 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Import thư viện BLoC
+
+// Import đúng đường dẫn model và cubit của bạn
 import '../../models/task/task_model.dart';
-import '../../services/task_service.dart';
+import '../../screen/task/bloc/task_bloc.dart';
 
-class DailyDetailScreen extends StatefulWidget {
+class DailyDetailScreen extends StatelessWidget {
   final Task task;
+
   const DailyDetailScreen({super.key, required this.task});
-
-  @override
-  State<DailyDetailScreen> createState() => _DailyDetailScreenState();
-}
-
-class _DailyDetailScreenState extends State<DailyDetailScreen> {
-  final TaskService _taskService = TaskService();
-  late bool _isCompleted;
-
-  @override
-  void initState() {
-    super.initState();
-    _isCompleted = widget.task.isCompleted;
-  }
-
-  Future<void> _handleFinish() async {
-    // Cập nhật trạng thái thành true (Hoàn thành)
-    final updatedTask = widget.task.copyWith(isCompleted: true);
-    await _taskService.updateTask(updatedTask);
-
-    setState(() {
-      _isCompleted = true;
-    });
-
-    // Tùy chọn: Có thể quay về Home luôn hoặc ở lại
-    if (mounted) Navigator.pop(context);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +25,7 @@ class _DailyDetailScreenState extends State<DailyDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(), // Spacer
+                  const SizedBox(), // Spacer để đẩy nút Close sang phải
                   InkWell(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -65,26 +42,26 @@ class _DailyDetailScreenState extends State<DailyDetailScreen> {
 
               // --- Title ---
               Text(
-                widget.task.title,
+                task.title,
                 style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1967D2)
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1967D2),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // --- Date ---
+              // --- Date Labels ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildDateLabel("start", widget.task.startTime),
-                  _buildDateLabel("end", widget.task.endTime, isEnd: true),
+                  _buildDateLabel("Start", task.startTime),
+                  _buildDateLabel("End", task.endTime, isEnd: true),
                 ],
               ),
               const SizedBox(height: 20),
 
-              // --- 2 Ô Countdown (Hours - Minutes) ---
+              // --- Countdown Boxes ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: _buildCountDownBoxes(),
@@ -95,27 +72,36 @@ class _DailyDetailScreenState extends State<DailyDetailScreen> {
               const Text("Description", style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 10),
               Text(
-                widget.task.description,
+                task.description,
                 style: const TextStyle(height: 1.5, color: Colors.black87),
               ),
 
               const Spacer(),
 
-              // --- Nút FINISH to đùng ---
+              // --- Finish Button ---
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: _isCompleted ? null : _handleFinish, // Nếu xong rồi thì disable nút
+                  // Nếu task đã hoàn thành (isCompleted == true) thì disable nút (null)
+                  // Ngược lại thì gọi hàm _handleFinish
+                  onPressed: task.isCompleted
+                      ? null
+                      : () => _handleFinish(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1967D2),
+                    disabledBackgroundColor: Colors.grey, // Màu khi nút bị disable
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
                   child: Text(
-                    _isCompleted ? "Completed" : "Finish",
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    task.isCompleted ? "Completed" : "Finish",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -127,28 +113,44 @@ class _DailyDetailScreenState extends State<DailyDetailScreen> {
     );
   }
 
+  // --- LOGIC XỬ LÝ FINISH BẰNG CUBIT ---
+  void _handleFinish(BuildContext context) {
+    // Gọi hàm toggleTaskCompletion đã viết trong Cubit
+    // Hàm này sẽ cập nhật state, lưu xuống máy và UI ở Home sẽ tự đổi màu
+    context.read<TaskCubit>().toggleTaskCompletion(task.id);
+
+    // Đóng màn hình detail quay về Home
+    Navigator.pop(context);
+  }
+
+  // --- CÁC WIDGET PHỤ TRỢ (GIỮ NGUYÊN LOGIC UI CŨ) ---
+
   Widget _buildDateLabel(String label, DateTime date, {bool isEnd = false}) {
     return Column(
       crossAxisAlignment: isEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(color: Colors.grey)),
-        Text(DateFormat('d MMM yyyy').format(date), style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          DateFormat('d MMM yyyy').format(date),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
 
   List<Widget> _buildCountDownBoxes() {
-    // Logic đếm ngược đơn giản cho daily task
     final now = DateTime.now();
-    // Giả sử daily task kết thúc vào cuối ngày hôm nay (23:59) nếu endTime < now
-    DateTime target = widget.task.endTime;
+    DateTime target = task.endTime;
+
+    // Logic cũ của bạn: Nếu quá hạn hoặc endTime nhỏ hơn hiện tại thì tính tới cuối ngày
     if (target.isBefore(now)) {
       target = DateTime(now.year, now.month, now.day, 23, 59);
     }
 
     final diff = target.difference(now);
-    final hours = diff.inHours;
-    final minutes = diff.inMinutes % 60;
+    // Đảm bảo không hiển thị số âm
+    final hours = diff.isNegative ? 0 : diff.inHours;
+    final minutes = diff.isNegative ? 0 : diff.inMinutes % 60;
 
     return [
       _timeBox(hours.toString(), "hours"),
@@ -168,7 +170,14 @@ class _DailyDetailScreenState extends State<DailyDetailScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(val, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+          Text(
+            val.padLeft(2, '0'), // Thêm số 0 đằng trước nếu < 10 (VD: 05)
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           Text(unit, style: const TextStyle(color: Colors.white70)),
         ],
       ),

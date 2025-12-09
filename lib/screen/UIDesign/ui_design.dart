@@ -1,248 +1,187 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Import Bloc
+
+// Import Model và Cubit
 import '../../models/task/task_model.dart';
-import '../../services/task_service.dart';
+import '../../screen/task/bloc/task_bloc.dart';
+import '../../screen/task/bloc/task_state.dart';
 
+class UiDesign extends StatelessWidget {
+  final Task initialTask; // Task ban đầu được truyền vào
 
-class UiDesign extends StatefulWidget {
+  const UiDesign({super.key, required this.task}) : initialTask = task;
+
+  // Đổi tên tham số constructor cho khớp với logic bên dưới
   final Task task;
-  const UiDesign({super.key, required this.task});
-
-  @override
-  State<UiDesign> createState() => _UiDesignState();
-}
-
-class _UiDesignState extends State<UiDesign> {
-  late Task _task;
-  final TaskService _taskService = TaskService();
-
-  @override
-  void initState() {
-    super.initState();
-    _task = widget.task;
-  }
-
-  // Hàm xử lý khi tick vào subtask
-  void _toggleSubTask(int index) async {
-    // 1. Tạo bản sao danh sách subtasks
-    List<SubTask> newSubTasks = List.from(_task.subTasks);
-
-    // 2. Đảo ngược trạng thái của item được chọn
-    final currentStatus = newSubTasks[index].isCompleted;
-    newSubTasks[index] = newSubTasks[index].copyWith(isCompleted: !currentStatus);
-
-    // 3. Cập nhật UI và lưu xuống máy
-    final updatedTask = _task.copyWith(subTasks: newSubTasks);
-
-    setState(() {
-      _task = updatedTask;
-    });
-
-    await _taskService.updateTask(_task);
-  }
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryBlue = Color(0xFF1967D2); // Màu xanh chủ đạo
-    const Color bgPink = Color(0xFFFFF0F0);      // Màu nền hồng nhạt
+    // Màu sắc chủ đạo
+    const Color primaryBlue = Color(0xFF1967D2);
+    const Color bgPink = Color(0xFFFFF0F0);
 
-    return Scaffold(
-      backgroundColor: bgPink,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // --- HEADER & TIMER SECTION ---
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Row: Title + Close Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    // Cần dùng BlocBuilder để lắng nghe thay đổi từ Cubit
+    // (Vì khi tick subtask, % progress phải thay đổi ngay lập tức)
+    return BlocBuilder<TaskCubit, TaskState>(
+      builder: (context, state) {
+
+        // Logic để tìm Task mới nhất từ trong Cubit state
+        // (Nếu không tìm thấy thì dùng tạm task ban đầu)
+        Task currentTask = initialTask;
+
+        state.whenOrNull(loaded: (tasks) {
+          final found = tasks.where((t) => t.id == initialTask.id);
+          if (found.isNotEmpty) {
+            currentTask = found.first;
+          }
+        });
+
+        return Scaffold(
+          backgroundColor: bgPink,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // --- HEADER & TIMER SECTION ---
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Icon + Title
+                      // Header Row
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.language, color: primaryBlue, size: 28), // Giả lập icon quả cầu
-                          const SizedBox(width: 10),
-                          Text(
-                            _task.title,
-                            style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: primaryBlue
-                            ),
+                          Row(
+                            children: [
+                              const Icon(Icons.language, color: primaryBlue, size: 28),
+                              const SizedBox(width: 10),
+                              Text(
+                                // Giới hạn độ dài title kẻo bị vỡ giao diện
+                                currentTask.title.length > 15
+                                    ? "${currentTask.title.substring(0, 15)}..."
+                                    : currentTask.title,
+                                style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryBlue
+                                ),
+                              ),
+                            ],
                           ),
+                          InkWell(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: primaryBlue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, color: Colors.white, size: 18),
+                            ),
+                          )
                         ],
                       ),
-                      // Close Button
-                      InkWell(
-                        onTap: () => Navigator.pop(context), // Quay lại màn hình trước
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: primaryBlue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.close, color: Colors.white, size: 18),
-                        ),
-                      )
+                      const SizedBox(height: 20),
+
+                      // Date Labels
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildDateLabel("start", currentTask.startTime),
+                          _buildDateLabel("end", currentTask.endTime, isEnd: true),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Countdown Boxes
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: _buildCountDownBoxes(currentTask.endTime),
+                      ),
                     ],
                   ),
+                ),
 
-                  const SizedBox(height: 20),
-
-                  // Row: Start Date & End Date Text
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildDateLabel("start", _task.startTime),
-                      _buildDateLabel("end", _task.endTime, isEnd: true),
-                    ],
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // Row: 3 ô đếm ngược (Months, Days, Hours)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: _buildCountDownBoxes(_task.endTime),
-                  ),
-                ],
-              ),
-            ),
-
-            // --- SCROLLABLE CONTENT (Description, Progress, To-Do List) ---
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Description", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Text(
-                      _task.description,
-                      style: TextStyle(color: Colors.grey[600], height: 1.5),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    // Progress Bar
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // --- SCROLLABLE CONTENT ---
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Progress", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text("${_task.progress}%", style: const TextStyle(color: primaryBlue, fontWeight: FontWeight.bold)),
+                        const Text("Description", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 8),
+                        Text(
+                          currentTask.description,
+                          style: TextStyle(color: Colors.grey[600], height: 1.5),
+                        ),
+                        const SizedBox(height: 25),
+
+                        // Progress Bar (Tự động cập nhật nhờ BlocBuilder)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Progress", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text("${currentTask.progress}%", style: const TextStyle(color: primaryBlue, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: currentTask.progress / 100,
+                            minHeight: 12,
+                            backgroundColor: Colors.grey[300],
+                            color: primaryBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 25),
+
+                        // To do List
+                        const Text("To do List", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 15),
+
+                        // List SubTasks
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: currentTask.subTasks.length,
+                          itemBuilder: (context, index) {
+                            return _buildSubTaskItem(
+                                context,
+                                currentTask.id, // Truyền ID Task cha
+                                index,          // Truyền index SubTask
+                                currentTask.subTasks[index]
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: _task.progress / 100,
-                        minHeight: 12,
-                        backgroundColor: Colors.grey[300],
-                        color: primaryBlue,
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    // To do List
-                    const Text("To do List", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 15),
-
-                    // List SubTasks
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _task.subTasks.length,
-                      itemBuilder: (context, index) {
-                        return _buildSubTaskItem(index, _task.subTasks[index]);
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- WIDGETS PHỤ ---
-
-  Widget _buildDateLabel(String label, DateTime date, {bool isEnd = false}) {
-    return Column(
-      crossAxisAlignment: isEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 4),
-        Text(
-          DateFormat('d MMM yyyy').format(date),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  // Hàm tạo 3 ô đếm ngược
-  List<Widget> _buildCountDownBoxes(DateTime endTime) {
-    final now = DateTime.now();
-    final diff = endTime.difference(now);
-
-    if (diff.isNegative) {
-      return [const Text("Expired", style: TextStyle(color: Colors.red))];
-    }
-
-    // Tính toán đơn giản (Giả sử 1 tháng = 30 ngày)
-    int months = (diff.inDays / 30).floor();
-    int days = diff.inDays % 30;
-    int hours = diff.inHours % 24;
-
-    return [
-      _timeBox(months.toString(), "months"),
-      _timeBox(days.toString(), "days"),
-      _timeBox(hours.toString(), "hours"),
-    ];
-  }
-
-  Widget _timeBox(String value, String unit) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1967D2), // Màu xanh
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
           ),
-          Text(
-            unit,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSubTaskItem(int index, SubTask subTask) {
+  // --- WIDGETS CON ---
+
+  Widget _buildSubTaskItem(BuildContext context, String taskId, int index, SubTask subTask) {
     return GestureDetector(
-      onTap: () => _toggleSubTask(index),
+      // GỌI CUBIT ĐỂ TOGGLE SUBTASK
+      onTap: () {
+        context.read<TaskCubit>().toggleSubTask(taskId, index);
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.5), // Nền trắng mờ
+          color: Colors.white.withOpacity(0.5),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
@@ -253,11 +192,10 @@ class _UiDesignState extends State<UiDesign> {
                 style: TextStyle(
                   color: const Color(0xFF1967D2),
                   fontWeight: FontWeight.w500,
-                  decoration: subTask.isCompleted ? TextDecoration.lineThrough : null, // Gạch ngang nếu xong
+                  decoration: subTask.isCompleted ? TextDecoration.lineThrough : null,
                 ),
               ),
             ),
-            // Custom Radio Button/Checkbox
             Container(
               width: 24,
               height: 24,
@@ -275,6 +213,63 @@ class _UiDesignState extends State<UiDesign> {
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDateLabel(String label, DateTime date, {bool isEnd = false}) {
+    return Column(
+      crossAxisAlignment: isEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(
+          DateFormat('d MMM yyyy').format(date),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildCountDownBoxes(DateTime endTime) {
+    final now = DateTime.now();
+    final diff = endTime.difference(now);
+
+    if (diff.isNegative) {
+      return [const Text("Expired", style: TextStyle(color: Colors.red, fontSize: 18))];
+    }
+
+    int months = (diff.inDays / 30).floor();
+    int days = diff.inDays % 30;
+    int hours = diff.inHours % 24;
+
+    return [
+      _timeBox(months.toString(), "months"),
+      _timeBox(days.toString(), "days"),
+      _timeBox(hours.toString(), "hours"),
+    ];
+  }
+
+  Widget _timeBox(String value, String unit) {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1967D2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value.padLeft(2, '0'),
+            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            unit,
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+        ],
       ),
     );
   }

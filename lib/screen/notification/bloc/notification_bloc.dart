@@ -18,16 +18,13 @@ class NotificationCubit extends Cubit<NotificationState> {
     }
   }
 
-  // HÀM QUAN TRỌNG: Đánh dấu đã đọc
   Future<void> readNotification(NotificationModel targetItem) async {
-    // Nếu đã đọc rồi thì không làm gì cả để tối ưu
     if (targetItem.isRead) return;
 
     state.whenOrNull(
       loaded: (currentList) async {
-        // 1. Cập nhật UI ngay lập tức (cho mượt)
         final newList = currentList.map((item) {
-          if (item.title == targetItem.title) { // So sánh bằng title (hoặc ID)
+          if (item.title == targetItem.title) {
             return item.copyWith(isRead: true);
           }
           return item;
@@ -35,7 +32,6 @@ class NotificationCubit extends Cubit<NotificationState> {
 
         emit(NotificationState.loaded(newList));
 
-        // 2. Gọi Service để lưu vào bộ nhớ máy (Lưu ngầm bên dưới)
         await _service.markAsRead(targetItem.title);
       },
     );

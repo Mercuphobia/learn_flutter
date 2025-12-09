@@ -21,9 +21,8 @@ class NotificationModel with _$NotificationModel {
 
 
 
-// DANH SÁCH DỮ LIỆU MẪU (15 ITEM)
 final List<NotificationModel> mockNotifications = [
-  // 1. Chart - Chưa đọc - Mới nhất
+
   NotificationModel(
     title: "Weekly Statistic Available",
     subtitle: "Hello Phillip, your report for week 42 is ready.",
@@ -33,7 +32,6 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 29, 9, 30),
   ),
 
-  // 2. Warning - Chưa đọc - Quan trọng
   NotificationModel(
     title: "Deadline Warning: UI Design",
     subtitle: "Task 'Homepage Redesign' is due in 2 hours.",
@@ -43,7 +41,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 29, 8, 00),
   ),
 
-  // 3. Check - Đã đọc
+
   NotificationModel(
     title: "Task Completed: Backend API",
     subtitle: "You successfully merged PR #1024.",
@@ -53,7 +51,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 28, 16, 45),
   ),
 
-  // 4. Warning - Đã đọc
+
   NotificationModel(
     title: "Server Maintenance",
     subtitle: "Scheduled maintenance in 24 hours.",
@@ -63,7 +61,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 28, 10, 00),
   ),
 
-  // 5. Chart - Đã đọc
+
   NotificationModel(
     title: "Project Progress: 80%",
     subtitle: "The 'E-commerce App' is ahead of schedule.",
@@ -73,7 +71,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 27, 14, 20),
   ),
 
-  // 6. Check - Đã đọc
+
   NotificationModel(
     title: "Payment Received",
     subtitle: "Salary for November has been transferred.",
@@ -83,7 +81,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 27, 9, 00),
   ),
 
-  // 7. Warning - Chưa đọc
+
   NotificationModel(
     title: "Meeting Reminder",
     subtitle: "Daily Standup starting in 15 minutes.",
@@ -93,7 +91,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 26, 9, 45),
   ),
 
-  // 8. Check - Đã đọc
+
   NotificationModel(
     title: "New Comment on Jira",
     subtitle: "Alex tagged you in ticket DEV-123.",
@@ -103,7 +101,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 25, 15, 30),
   ),
 
-  // 9. Chart - Đã đọc
+
   NotificationModel(
     title: "Storage Usage Alert",
     subtitle: "You have used 90% of your cloud storage.",
@@ -113,7 +111,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 24, 11, 00),
   ),
 
-  // 10. Warning - Đã đọc
+
   NotificationModel(
     title: "Password Expiring",
     subtitle: "Your password will expire in 3 days.",
@@ -123,7 +121,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 23, 08, 00),
   ),
 
-  // 11. Check - Đã đọc
+
   NotificationModel(
     title: "Code Review Passed",
     subtitle: "Your code for 'Dark Mode' is approved.",
@@ -133,7 +131,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 22, 17, 15),
   ),
 
-  // 12. Warning - Đã đọc
+
   NotificationModel(
     title: "Missed Call",
     subtitle: "You missed a call from HR Department.",
@@ -143,7 +141,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 21, 10, 30),
   ),
 
-  // 13. Chart - Đã đọc
+
   NotificationModel(
     title: "Performance Review",
     subtitle: "Q3 Performance results are out.",
@@ -153,7 +151,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 20, 13, 00),
   ),
 
-  // 14. Check - Đã đọc
+
   NotificationModel(
     title: "System Update",
     subtitle: "Flutter SDK updated to version 3.29.",
@@ -163,7 +161,7 @@ final List<NotificationModel> mockNotifications = [
     date: DateTime(2025, 11, 19, 09, 00),
   ),
 
-  // 15. Warning - Đã đọc
+
   NotificationModel(
     title: "Office Closed",
     subtitle: "Office will be closed on Friday.",
