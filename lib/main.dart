@@ -11,7 +11,7 @@ import './screen/notification/bloc/notification_bloc.dart';
 // Import các màn hình
 import 'screen/splash_screen.dart';
 import 'screen/onboarding_screen.dart';
-import 'screen/home_screen.dart';
+import 'screen/task/home_screen.dart';
 import 'screen/register/register_screen.dart';
 import 'screen/login/login_screen.dart';
 import 'screen/verify/verify_screen.dart';
@@ -70,7 +70,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        initialRoute: '/',
+        initialRoute: '/login',
         routes: {
           '/': (context) => const SplashScreen(),
           '/onboarding': (context) => const OnboardingScreen(),

@@ -25,8 +25,8 @@ class Task with _$Task {
     required DateTime startTime,
     required DateTime endTime,
     @Default(false) bool isPriority,
-    @Default(false) bool isCompleted, // Trạng thái của task cha
-    @Default([]) List<SubTask> subTasks, // Danh sách việc con
+    @Default(false) bool isCompleted,
+    @Default([]) List<SubTask> subTasks,
   }) = _Task;
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);

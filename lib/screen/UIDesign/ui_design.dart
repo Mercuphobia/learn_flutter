@@ -1,37 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Import Bloc
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-// Import Model và Cubit
 import '../../models/task/task_model.dart';
 import '../../screen/task/bloc/task_bloc.dart';
 import '../../screen/task/bloc/task_state.dart';
+import '../../screen/task/edit_task_screen.dart';
+
 
 class UiDesign extends StatelessWidget {
-  final Task initialTask; // Task ban đầu được truyền vào
-
-  const UiDesign({super.key, required this.task}) : initialTask = task;
-
-  // Đổi tên tham số constructor cho khớp với logic bên dưới
   final Task task;
+  const UiDesign({super.key, required this.task});
+
 
   @override
   Widget build(BuildContext context) {
-    // Màu sắc chủ đạo
     const Color primaryBlue = Color(0xFF1967D2);
     const Color bgPink = Color(0xFFFFF0F0);
 
-    // Cần dùng BlocBuilder để lắng nghe thay đổi từ Cubit
-    // (Vì khi tick subtask, % progress phải thay đổi ngay lập tức)
     return BlocBuilder<TaskCubit, TaskState>(
       builder: (context, state) {
 
-        // Logic để tìm Task mới nhất từ trong Cubit state
-        // (Nếu không tìm thấy thì dùng tạm task ban đầu)
-        Task currentTask = initialTask;
-
+        // Logic tìm task mới nhất
+        Task currentTask = task;
         state.whenOrNull(loaded: (tasks) {
-          final found = tasks.where((t) => t.id == initialTask.id);
+          final found = tasks.where((t) => t.id == task.id);
           if (found.isNotEmpty) {
             currentTask = found.first;
           }
@@ -52,12 +45,12 @@ class UiDesign extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          // Title & Icon
                           Row(
                             children: [
                               const Icon(Icons.language, color: primaryBlue, size: 28),
                               const SizedBox(width: 10),
                               Text(
-                                // Giới hạn độ dài title kẻo bị vỡ giao diện
                                 currentTask.title.length > 15
                                     ? "${currentTask.title.substring(0, 15)}..."
                                     : currentTask.title,
@@ -69,16 +62,63 @@ class UiDesign extends StatelessWidget {
                               ),
                             ],
                           ),
-                          InkWell(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: primaryBlue,
-                                shape: BoxShape.circle,
+
+                          // Action Buttons (Edit & Close)
+                          Row(
+                            children: [
+                              // InkWell(
+                              //   onTap: () {
+                              //     Navigator.push(
+                              //       context,
+                              //       MaterialPageRoute(
+                              //         builder: (context) => EditTaskScreen(task: currentTask),
+                              //       ),
+                              //     );
+                              //   },
+                              //   // Thêm phần hiển thị Icon Edit
+                              //   child: Container(
+                              //     padding: const EdgeInsets.all(8),
+                              //     decoration: const BoxDecoration(
+                              //       color: Colors.white, // Nền trắng cho nổi bật
+                              //       shape: BoxShape.circle,
+                              //     ),
+                              //     child: const Icon(Icons.edit, color: primaryBlue, size: 20),
+                              //   ),
+                              // ),
+                              InkWell(
+                                onTap: (){
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => EditTaskScreen(task: currentTask),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.edit, color: primaryBlue, size: 20),
+                                ),
                               ),
-                              child: const Icon(Icons.close, color: Colors.white, size: 18),
-                            ),
+
+
+                              const SizedBox(width: 10),
+
+                              InkWell(
+                                onTap: () => Navigator.pop(context),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: primaryBlue,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                                ),
+                              ),
+                            ],
                           )
                         ],
                       ),
@@ -118,7 +158,7 @@ class UiDesign extends StatelessWidget {
                         ),
                         const SizedBox(height: 25),
 
-                        // Progress Bar (Tự động cập nhật nhờ BlocBuilder)
+                        // Progress Bar
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -150,8 +190,8 @@ class UiDesign extends StatelessWidget {
                           itemBuilder: (context, index) {
                             return _buildSubTaskItem(
                                 context,
-                                currentTask.id, // Truyền ID Task cha
-                                index,          // Truyền index SubTask
+                                currentTask.id,
+                                index,
                                 currentTask.subTasks[index]
                             );
                           },
@@ -173,7 +213,6 @@ class UiDesign extends StatelessWidget {
 
   Widget _buildSubTaskItem(BuildContext context, String taskId, int index, SubTask subTask) {
     return GestureDetector(
-      // GỌI CUBIT ĐỂ TOGGLE SUBTASK
       onTap: () {
         context.read<TaskCubit>().toggleSubTask(taskId, index);
       },

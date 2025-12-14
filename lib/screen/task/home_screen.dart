@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/task/task_model.dart';
-import '../screen/task/bloc/task_bloc.dart';
-import '../screen/task/bloc/task_state.dart';
+import '../../../models/task/task_model.dart';
+import 'bloc/task_bloc.dart';
+import 'bloc/task_state.dart';
 
-import '../screen/calendar/calendar_screen.dart';
-import '../screen/profile/profile_screen.dart';
-import '../screen/UIDesign/ui_design.dart';
-import '../screen/UIDesign/daily_detail_screen.dart';
-import '../screen/notification/notification_screen.dart';
+import '../calendar/calendar_screen.dart';
+import '../profile/profile_screen.dart';
+import '../UIDesign/ui_design.dart';
+import '../UIDesign/daily_detail_screen.dart';
+import '../notification/notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +20,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Biến UI State (Giữ nguyên vì nó chỉ quản lý tab, không liên quan data)
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -31,11 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Lưu ý: Đảm bảo bạn đã bọc HomeScreen bằng BlocProvider<TaskCubit> ở main.dart
-    // hoặc bọc ngay tại đây nếu muốn.
 
     final List<Widget> pages = [
-      _buildHomeContent(), // Phần này sẽ dùng BlocBuilder
+      _buildHomeContent(),
       const CalendarScreen(),
       const ProfileScreen(),
     ];
@@ -54,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeContent() {
     return BlocBuilder<TaskCubit, TaskState>(
       builder: (context, state) {
-        // Dùng .when để xử lý các trạng thái từ Cubit
         return state.when(
           initial: () => const SizedBox(),
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -62,7 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // KHI CÓ DỮ LIỆU
           loaded: (allTasks) {
-            // Lọc dữ liệu ngay tại đây
             final priorityTasks = allTasks.where((t) => t.isPriority).toList();
             final dailyTasks = allTasks.where((t) => !t.isPriority).toList();
 
@@ -75,9 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       _buildHeader(),
                       const SizedBox(height: 30),
-                      _buildPrioritySection(priorityTasks), // Truyền list vào
+                      _buildPrioritySection(priorityTasks),
                       const SizedBox(height: 30),
-                      _buildDailyTaskSection(dailyTasks),   // Truyền list vào
+                      _buildDailyTaskSection(dailyTasks),
                     ],
                   ),
                 ),
@@ -164,8 +159,6 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(builder: (context) => UiDesign(task: task)),
         );
-        // KHÔNG CẦN gọi .then(loadData) nữa vì Cubit tự động cập nhật UI
-        // nếu màn hình UiDesign có gọi hàm của Cubit.
       },
       child: Container(
         width: 160,
@@ -188,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Text(
                   "$daysLeft days",
-                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
             ),
@@ -206,9 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Progress", style: TextStyle(color: Colors.white70, fontSize: 10)),
-                // Sử dụng getter progress trong model
-                Text("${task.progress}%", style: const TextStyle(color: Colors.white, fontSize: 10)),
+                const Text("Progress", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text("${task.progress}%", style: const TextStyle(color: Colors.white, fontSize: 12)),
               ],
             ),
             const SizedBox(height: 5),
@@ -273,14 +265,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             InkWell(
               onTap: () {
-                // GỌI CUBIT ĐỂ CẬP NHẬT TRẠNG THÁI
-                // (Giả sử bạn đã thêm hàm toggleTaskCompletion vào Cubit,
-                // nếu chưa thì bạn dùng hàm addTask/updateTask trong Cubit)
-
-                // Ví dụ cách gọi (cần thêm hàm toggleTask trong Cubit trước):
-                // context.read<TaskCubit>().toggleTaskCompletion(task.id);
-
-                // HOẶC gọi hàm updateTask nếu Cubit có:
                 final updated = task.copyWith(isCompleted: !task.isCompleted);
                 context.read<TaskCubit>().addTask(updated); // Hoặc hàm updateTask tương ứng
               },

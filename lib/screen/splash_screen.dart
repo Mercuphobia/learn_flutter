@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Chờ 2 giây rồi chuyển sang màn hình Onboarding
     Timer(
       const Duration(seconds: 2),
-          () => Navigator.pushReplacementNamed(context, '/onboarding'),
+          () => Navigator.pushReplacementNamed(context, '/login'),
     );
   }
 

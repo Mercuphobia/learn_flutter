@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../notification/bloc/notification_state.dart';
 import '../../../models/task/task_model.dart';
 import '../../../services/task_service.dart';
 import './task_state.dart';
@@ -76,5 +77,23 @@ class TaskCubit extends Cubit<TaskState> {
       // 3. Lưu xuống máy (quan trọng)
       await _service.saveToPrefs(updatedList);
     });
+  }
+
+  Future<void> editTask(String taskId, Task updatedTask) async {
+    state.whenOrNull(
+      loaded: (currentList) async {
+        final updatedList = currentList.map((task) {
+          if (task.id == taskId) {
+            return updatedTask; // Thay thế task cũ bằng task đã chỉnh sửa
+          }
+          return task;
+        }).toList();
+
+        emit(TaskState.loaded(updatedList));
+
+        // Cập nhật task lên server hoặc local storage
+        await _service.updateTask(updatedTask);
+      },
+    );
   }
 }

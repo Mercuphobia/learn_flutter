@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Import thư viện BLoC
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-// Import đúng đường dẫn model và cubit của bạn
 import '../../models/task/task_model.dart';
 import '../../screen/task/bloc/task_bloc.dart';
 
@@ -21,11 +20,10 @@ class DailyDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Header (Nút Close) ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(), // Spacer để đẩy nút Close sang phải
+                  const SizedBox(),
                   InkWell(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -51,7 +49,6 @@ class DailyDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // --- Date Labels ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -119,11 +116,9 @@ class DailyDetailScreen extends StatelessWidget {
     // Hàm này sẽ cập nhật state, lưu xuống máy và UI ở Home sẽ tự đổi màu
     context.read<TaskCubit>().toggleTaskCompletion(task.id);
 
-    // Đóng màn hình detail quay về Home
     Navigator.pop(context);
   }
 
-  // --- CÁC WIDGET PHỤ TRỢ (GIỮ NGUYÊN LOGIC UI CŨ) ---
 
   Widget _buildDateLabel(String label, DateTime date, {bool isEnd = false}) {
     return Column(

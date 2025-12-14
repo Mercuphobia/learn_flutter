@@ -35,15 +35,15 @@ class TaskService {
   // }
 
   // 4. Cập nhật Task
-  // Future<void> updateTask(Task updatedTask) async {
-  //   final tasks = await getTasks();
-  //   final index = tasks.indexWhere((t) => t.id == updatedTask.id);
-  //
-  //   if (index != -1) {
-  //     tasks[index] = updatedTask;
-  //     await _saveToPrefs(tasks);
-  //   }
-  // }
+  Future<void> updateTask(Task updatedTask) async {
+    final tasks = await getTasks();
+    final index = tasks.indexWhere((t) => t.id == updatedTask.id);
+
+    if (index != -1) {
+      tasks[index] = updatedTask;
+      await saveToPrefs(tasks);
+    }
+  }
 
   // 5. Xóa Task
   // Future<void> deleteTask(String id) async {
