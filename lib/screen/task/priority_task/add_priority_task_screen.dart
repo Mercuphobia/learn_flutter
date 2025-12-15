@@ -2,63 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:uuid/uuid.dart';
+import '../../../models/task/task_model.dart';
+import '../bloc/task_bloc.dart';
 
-import '../../models/task/task_model.dart';
-import '../../screen/task/bloc/task_bloc.dart';
-
-class EditTaskScreen extends StatefulWidget {
-  final Task task;
-  const EditTaskScreen({super.key, required this.task});
+class AddPriorityTaskScreen extends StatefulWidget {
+  const AddPriorityTaskScreen({super.key});
 
   @override
-  State<EditTaskScreen> createState() => _EditTaskScreenState();
+  State<AddPriorityTaskScreen> createState() => _AddPriorityTaskScreenState();
 }
 
-class _EditTaskScreenState extends State<EditTaskScreen> {
+class _AddPriorityTaskScreenState extends State<AddPriorityTaskScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController _titleController;
-  late TextEditingController _descController;
-  late DateTime _startTime;
-  late DateTime _endTime;
-  late bool _isPriority;
-  late List<SubTask> _subTasks;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+  DateTime _startTime = DateTime.now();
+  DateTime _endTime = DateTime.now();
+  bool _isPriority = true;
+  List<SubTask> _subTasks = [];
   final TextEditingController _subTaskController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    // 3. Điền dữ liệu cũ vào form khi mở màn hình
-    _titleController = TextEditingController(text: widget.task.title);
-    _descController = TextEditingController(text: widget.task.description);
-    _startTime = widget.task.startTime;
-    _endTime = widget.task.endTime;
-    _isPriority = widget.task.isPriority;
-    _subTasks = List.from(widget.task.subTasks); // Tạo bản sao danh sách để tránh lỗi tham chiếu
-  }
 
-  // 4. Hàm xử lý logic Update
-  Future<void> _handleUpdateTask() async {
+  Future<void> _handleCreateTask() async{
     if (!_formKey.currentState!.validate()) return;
-
-    // Tạo object Task mới với thông tin đã sửa (nhưng giữ nguyên ID cũ)
-    final updatedTask = Task(
-      id: widget.task.id,
+     // tao Taks moi
+    final newTask = Task(
+      id: const Uuid().v4(),
       title: _titleController.text,
       description: _descController.text,
       startTime: _startTime,
       endTime: _endTime,
       isPriority: _isPriority,
-      isCompleted: widget.task.isCompleted,
+      isCompleted: false,
       subTasks: _subTasks,
     );
 
-    // --- QUAN TRỌNG: Gọi Cubit để cập nhật UI & Service ---
-    context.read<TaskCubit>().editTask(widget.task.id, updatedTask);
-    // -----------------------------------------------------
-
-    if (mounted) Navigator.pop(context); // Quay về màn hình trước
+    context.read<TaskCubit>().addTask(newTask);
+    if(mounted) Navigator.pop(context);
   }
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
 
   // Hàm chọn ngày giờ
   Future<void> _pickDate(bool isStart) async {
@@ -87,14 +76,14 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     const Color bgPink = Color(0xFFFFF0F0);
 
     return Scaffold(
-      backgroundColor: primaryBlue, // Nền xanh chủ đạo cho Header
+      backgroundColor: primaryBlue,
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
             // --- HEADER (Nút Back + Title) ---
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
               child: Row(
                 children: [
                   InkWell(
@@ -110,7 +99,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                   ),
                   const Expanded(
                     child: Text(
-                      "Edit Task",
+                      "Add Task",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -142,24 +131,24 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // --- ICON TO & TITLE ---
-                        Center(
-                          child: Column(
-                            children: [
-                              const Icon(Icons.design_services, size: 40, color: primaryBlue),
-                              const SizedBox(height: 10),
-                              Text(
-                                _titleController.text.isEmpty ? "Task Name" : _titleController.text,
-                                style: const TextStyle(
-                                  color: primaryBlue,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 30),
+                        // Center(
+                        //   child: Column(
+                        //     children: [
+                        //       // const Icon(Icons.design_services, size: 40, color: primaryBlue),
+                        //       // const SizedBox(height: 10),
+                        //       Text(
+                        //         _titleController.text.isEmpty ? "Task Name" : _titleController.text,
+                        //         style: const TextStyle(
+                        //           color: primaryBlue,
+                        //           fontSize: 24,
+                        //           fontWeight: FontWeight.bold,
+                        //         ),
+                        //         textAlign: TextAlign.center,
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 30),
 
                         // --- DATE PICKERS ---
                         Row(
@@ -266,7 +255,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           width: double.infinity,
                           height: 55,
                           child: ElevatedButton(
-                            onPressed: _handleUpdateTask,
+                            onPressed: _handleCreateTask,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryBlue,
                               shape: RoundedRectangleBorder(

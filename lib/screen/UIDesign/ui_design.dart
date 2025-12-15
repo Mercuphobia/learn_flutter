@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/task/task_model.dart';
 import '../../screen/task/bloc/task_bloc.dart';
 import '../../screen/task/bloc/task_state.dart';
-import '../../screen/task/edit_task_screen.dart';
+import '../task/priority_task/edit_priority_task_screen.dart';
+import '../task/priority_task/add_priority_task_screen.dart';
 
 
 class UiDesign extends StatelessWidget {
@@ -66,31 +67,31 @@ class UiDesign extends StatelessWidget {
                           // Action Buttons (Edit & Close)
                           Row(
                             children: [
-                              // InkWell(
-                              //   onTap: () {
-                              //     Navigator.push(
-                              //       context,
-                              //       MaterialPageRoute(
-                              //         builder: (context) => EditTaskScreen(task: currentTask),
-                              //       ),
-                              //     );
-                              //   },
-                              //   // Thêm phần hiển thị Icon Edit
-                              //   child: Container(
-                              //     padding: const EdgeInsets.all(8),
-                              //     decoration: const BoxDecoration(
-                              //       color: Colors.white, // Nền trắng cho nổi bật
-                              //       shape: BoxShape.circle,
-                              //     ),
-                              //     child: const Icon(Icons.edit, color: primaryBlue, size: 20),
-                              //   ),
-                              // ),
                               InkWell(
                                 onTap: (){
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) => EditTaskScreen(task: currentTask),
+                                      builder: (context) => AddPriorityTaskScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.add, color: primaryBlue, size: 20),
+                                ),
+                              ),
+
+                              InkWell(
+                                onTap: (){
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => EditPriorityTaskScreen(task: currentTask),
                                     ),
                                   );
                                 },
