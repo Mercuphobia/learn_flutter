@@ -17,13 +17,68 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _selectedDate = DateTime.now();
-  bool _isPriorityTab = true; // true = Priority Task Tab, false = Daily Task Tab
+  bool _isPriorityTab = true;
+
+  // 1. Controller để điều khiển vị trí cuộn của lịch
+  final ScrollController _scrollController = ScrollController();
+
+  // 2. Mốc thời gian bắt đầu (Ví dụ: từ năm 2020)
+  final DateTime _startDate = DateTime(2020, 1, 1);
 
   @override
   void initState() {
     super.initState();
-    // Load lại task khi vào màn hình này để đảm bảo dữ liệu mới nhất
     context.read<TaskCubit>().loadTasks();
+
+    // 3. Tự động cuộn đến ngày hôm nay khi mở màn hình
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToDate(_selectedDate);
+    });
+  }
+
+  // Hàm tính toán và cuộn dải lịch đến ngày mong muốn
+  void _scrollToDate(DateTime date) {
+    // Tính số ngày chênh lệch từ mốc bắt đầu
+    final int daysDiff = date.difference(_startDate).inDays;
+
+    // Tính toán vị trí pixel (Mỗi ô rộng 60 + margin 12 = 72px)
+    // Trừ đi nửa màn hình để ngày chọn nằm chính giữa
+    final double offset = (daysDiff * 72.0) - (MediaQuery.of(context).size.width / 2) + 30;
+
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        offset,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Future<void> _showFullCalendar() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1967D2),
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+      // Khi chọn từ lịch to xong -> Cuộn dải lịch bên dưới đến ngày đó
+      _scrollToDate(picked);
+    }
   }
 
   @override
@@ -31,82 +86,87 @@ class _CalendarScreenState extends State<CalendarScreen> {
     const Color primaryBlue = Color(0xFF1967D2);
     const Color bgPink = Color(0xFFFFF0F0);
 
-    return Scaffold(
-      backgroundColor: bgPink,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              // --- 1. HEADER (Month + Add Button) ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return BlocBuilder<TaskCubit, TaskState>(
+      builder: (context, state) {
+        List<Task> allTasks = [];
+        state.whenOrNull(loaded: (tasks) => allTasks = tasks);
+
+        return Scaffold(
+          backgroundColor: bgPink,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
                 children: [
+                  // HEADER
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.calendar_month, color: primaryBlue),
-                      const SizedBox(width: 10),
-                      Text(
-                        DateFormat('MMM, yyyy').format(_selectedDate),
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      InkWell(
+                        onTap: _showFullCalendar,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_month, color: primaryBlue),
+                              const SizedBox(width: 10),
+                              Text(
+                                DateFormat('MMM, yyyy').format(_selectedDate),
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                              const Icon(Icons.arrow_drop_down, color: primaryBlue),
+                            ],
+                          ),
+                        ),
                       ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AddPriorityTaskScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text("Add Task"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryBlue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      )
                     ],
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AddPriorityTaskScreen()),
-                      );
-                    },
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text("Add Task"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  const SizedBox(height: 20),
+
+                  // DẢI LỊCH (Đã nâng cấp cuộn vô tận)
+                  _buildCalendarStrip(primaryBlue, allTasks),
+                  const SizedBox(height: 25),
+
+                  // TAB SWITCHER
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildTabButton("Priority Task", true, primaryBlue),
+                        const SizedBox(width: 25),
+                        _buildTabButton("Daily Task", false, primaryBlue),
+                      ],
                     ),
-                  )
-                ],
-              ),
-              const SizedBox(height: 20),
+                  ),
+                  const SizedBox(height: 20),
 
-              // --- 2. WEEK CALENDAR STRIP ---
-              _buildCalendarStrip(primaryBlue),
-              const SizedBox(height: 25),
-
-              // --- 3. TAB SWITCHER (Priority | Daily) ---
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildTabButton("Priority Task", true, primaryBlue),
-                    const SizedBox(width: 25),
-                    _buildTabButton("Daily Task", false, primaryBlue),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // --- 4. TASK LIST (BlocBuilder) ---
-              Expanded(
-                child: BlocBuilder<TaskCubit, TaskState>(
-                  builder: (context, state) {
-                    return state.maybeWhen(
-                      loaded: (allTasks) {
-                        // LỌC DỮ LIỆU
+                  // LIST VIEW
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
                         final filteredTasks = allTasks.where((task) {
-                          // 1. Lọc theo ngày
                           final isSameDay = task.startTime.year == _selectedDate.year &&
                               task.startTime.month == _selectedDate.month &&
                               task.startTime.day == _selectedDate.day;
-
-                          // 2. Lọc theo Tab (Priority hay Daily)
-                          // Lưu ý: task.isPriority == true (Priority), false (Daily)
                           final isMatchingType = task.isPriority == _isPriorityTab;
-
                           return isSameDay && isMatchingType;
                         }).toList();
 
@@ -127,41 +187,57 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           itemCount: filteredTasks.length,
                           itemBuilder: (context, index) {
                             final task = filteredTasks[index];
-                            // Tùy theo Tab mà hiển thị kiểu Card khác nhau
                             return _isPriorityTab
                                 ? _buildPriorityTaskCard(task, primaryBlue)
                                 : _buildDailyTaskCard(task, primaryBlue);
                           },
                         );
                       },
-                      orElse: () => const Center(child: CircularProgressIndicator()),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  // --- WIDGET: Dải lịch ngang ---
-  Widget _buildCalendarStrip(Color primaryColor) {
+  // --- WIDGET: Dải lịch ngang (Logic mới: Dùng ScrollController) ---
+  Widget _buildCalendarStrip(Color primaryColor, List<Task> allTasks) {
     return SizedBox(
-      height: 85,
+      height: 90,
       child: ListView.builder(
+        // Gắn controller vào để điều khiển vị trí
+        controller: _scrollController,
         scrollDirection: Axis.horizontal,
-        itemCount: 14, // Hiển thị 2 tuần (giả lập)
+        // Tạo ra 5000 ngày (hơn 10 năm) để cuộn thoải mái
+        itemCount: 365 * 15,
         itemBuilder: (context, index) {
-          // Logic ngày: Bắt đầu từ 3 ngày trước
-          final date = DateTime.now().subtract(const Duration(days: 3)).add(Duration(days: index));
+          // Tính ngày dựa trên mốc cố định _startDate (2020) + index
+          final date = _startDate.add(Duration(days: index));
+
           final isSelected = date.year == _selectedDate.year &&
               date.month == _selectedDate.month &&
               date.day == _selectedDate.day;
 
+          // Đếm số task
+          final int taskCount = allTasks.where((t) {
+            final isSameDate = t.startTime.year == date.year &&
+                t.startTime.month == date.month &&
+                t.startTime.day == date.day;
+            final isSameType = t.isPriority == _isPriorityTab;
+            return isSameDate && isSameType;
+          }).length;
+
           return GestureDetector(
-            onTap: () => setState(() => _selectedDate = date),
+            onTap: () {
+              setState(() {
+                _selectedDate = date;
+              });
+              _scrollToDate(date); // Cuộn mượt đến ngày vừa bấm
+            },
             child: Container(
               width: 60,
               margin: const EdgeInsets.only(right: 12),
@@ -191,6 +267,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 5),
+
+                  // Chấm hiển thị số lượng
+                  if (taskCount > 0)
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.white : Colors.orange,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        taskCount > 9 ? "9+" : taskCount.toString(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? primaryColor : Colors.white,
+                        ),
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 14),
                 ],
               ),
             ),
@@ -200,7 +297,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  // --- WIDGET: Tab Title ---
+  // --- Các Widget phụ giữ nguyên ---
   Widget _buildTabButton(String title, bool isTabPriority, Color color) {
     final bool isActive = _isPriorityTab == isTabPriority;
     return GestureDetector(
@@ -208,107 +305,41 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isActive ? Colors.blue : Colors.black,
-            ),
-          ),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isActive ? const Color(0xFF0640EC) : Colors.black)),
           const SizedBox(height: 6),
-          // Dấu gạch chân xanh
-          AnimatedContainer(
-            duration: const Duration(microseconds: 300),
-            height: 4,
-            width: isActive ? 40 : 0,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+          AnimatedContainer(duration: const Duration(milliseconds: 300), height: 4, width: isActive ? 40 : 0, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10))),
         ],
       ),
     );
   }
 
-  // --- CARD 1: Style cho Priority Task (Chi tiết, có Description) ---
   Widget _buildPriorityTaskCard(Task task, Color color) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => EditPriorityTaskScreen(task: task))
-        );
-      },
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => EditPriorityTaskScreen(task: task))),
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.design_services, color: color),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    task.title,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
-                  ),
-                ),
-                Icon(Icons.more_horiz, color: Colors.grey[400]),
-              ],
-            ),
+            Row(children: [Icon(Icons.design_services, color: color), const SizedBox(width: 10), Expanded(child: Text(task.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color))), Icon(Icons.more_horiz, color: Colors.grey[400])]),
             const SizedBox(height: 10),
-            Text(
-              task.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.5),
-            ),
+            Text(task.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.5)),
             const SizedBox(height: 15),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                "${DateFormat('MMM dd').format(task.startTime)} - ${DateFormat('MMM dd').format(task.endTime)}",
-                style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600),
-              ),
-            )
+            Align(alignment: Alignment.centerRight, child: Text("${DateFormat('MMM dd').format(task.startTime)} - ${DateFormat('MMM dd').format(task.endTime)}", style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)))
           ],
         ),
       ),
     );
   }
 
-  // --- CARD 2: Style cho Daily Task (Đơn giản, gọn nhẹ) ---
   Widget _buildDailyTaskCard(Task task, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              task.title,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87.withOpacity(0.7),
-              ),
-            ),
-          ),
-          // Nếu muốn có thể thêm checkbox hoặc giờ ở đây
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+      child: Row(children: [Expanded(child: Text(task.title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.black87.withOpacity(0.7))))]),
     );
   }
 }
