@@ -190,8 +190,7 @@ mixin _$Task {
   DateTime get startTime => throw _privateConstructorUsedError;
   DateTime get endTime => throw _privateConstructorUsedError;
   bool get isPriority => throw _privateConstructorUsedError;
-  bool get isCompleted =>
-      throw _privateConstructorUsedError; // Trạng thái của task cha
+  bool get isCompleted => throw _privateConstructorUsedError;
   List<SubTask> get subTasks => throw _privateConstructorUsedError;
 
   /// Serializes this Task to a JSON map.
@@ -398,9 +397,7 @@ class _$TaskImpl extends _Task {
   @override
   @JsonKey()
   final bool isCompleted;
-  // Trạng thái của task cha
   final List<SubTask> _subTasks;
-  // Trạng thái của task cha
   @override
   @JsonKey()
   List<SubTask> get subTasks {
@@ -489,7 +486,7 @@ abstract class _Task extends Task {
   @override
   bool get isPriority;
   @override
-  bool get isCompleted; // Trạng thái của task cha
+  bool get isCompleted;
   @override
   List<SubTask> get subTasks;
 

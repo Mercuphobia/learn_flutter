@@ -140,7 +140,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // DẢI LỊCH (Đã nâng cấp cuộn vô tận)
                   _buildCalendarStrip(primaryBlue, allTasks),
                   const SizedBox(height: 25),
 
